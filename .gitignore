@@ -1,5 +1,6 @@
 **/bin/
 **/obj/
+/artifacts/
 /app/
 /.vs/
 /.idea/

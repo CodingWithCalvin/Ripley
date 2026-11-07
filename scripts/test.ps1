@@ -1,6 +1,12 @@
 $ErrorActionPreference = 'Stop'
 $root = Split-Path $PSScriptRoot -Parent
-& dotnet build (Join-Path $root 'tests\FakeCli\FakeCli.csproj') -c Release
-if ($LASTEXITCODE -ne 0) { throw 'Test runtime build failed.' }
-& dotnet run --project (Join-Path $root 'tests\Reel.Tests\Tests.csproj') -c Release -- (Join-Path $root 'tests\FakeCli\bin\Release\net9.0\FakeCli.exe')
-if ($LASTEXITCODE -ne 0) { throw 'Reel checks failed.' }
+Push-Location $root
+try {
+    & dotnet build 'tests\FakeCli\FakeCli.csproj' -c Release
+    if ($LASTEXITCODE -ne 0) { throw 'Test runtime build failed.' }
+    $fakeTarget = & dotnet msbuild 'tests\FakeCli\FakeCli.csproj' -getProperty:TargetPath -p:Configuration=Release -nologo
+    if ($LASTEXITCODE -ne 0) { throw 'Could not locate the test runtime.' }
+    $fakeExecutable = [System.IO.Path]::ChangeExtension(($fakeTarget -join '').Trim(), '.exe')
+    & dotnet run --project 'tests\Reel.Tests\Tests.csproj' -c Release -- $fakeExecutable
+    if ($LASTEXITCODE -ne 0) { throw 'Reel checks failed.' }
+} finally { Pop-Location }

@@ -1,11 +1,19 @@
 param([string]$HandBrakeCli)
 $ErrorActionPreference = 'Stop'
 $root = Split-Path $PSScriptRoot -Parent
-& dotnet publish (Join-Path $root 'src\Reel\Reel.csproj') -c Release -o (Join-Path $root 'app') --no-self-contained
-if ($LASTEXITCODE -ne 0) { throw 'Reel build failed.' }
-if ($HandBrakeCli) {
-    $runtime = Join-Path $root 'app\handbrake'
-    New-Item -ItemType Directory -Force $runtime | Out-Null
-    Copy-Item -LiteralPath $HandBrakeCli -Destination (Join-Path $runtime 'HandBrakeCLI.exe') -Force
-}
-Write-Output (Join-Path $root 'app\Reel.exe')
+$output = Join-Path $root 'artifacts\app'
+if ($HandBrakeCli) { $HandBrakeCli = (Resolve-Path -LiteralPath $HandBrakeCli).Path }
+Push-Location $root
+try {
+    & dotnet publish 'src\Reel\Reel.csproj' -c Release -o $output --no-self-contained
+    if ($LASTEXITCODE -ne 0) { throw 'Reel build failed.' }
+    if ($HandBrakeCli) {
+        $runtime = Join-Path $output 'handbrake'
+        New-Item -ItemType Directory -Force $runtime | Out-Null
+        $destination = Join-Path $runtime 'HandBrakeCLI.exe'
+        if ($HandBrakeCli -ne $destination) {
+            Copy-Item -LiteralPath $HandBrakeCli -Destination $destination -Force
+        }
+    }
+    Write-Output (Join-Path $output 'Reel.exe')
+} finally { Pop-Location }

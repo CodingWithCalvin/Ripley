@@ -4,7 +4,7 @@ A Windows desktop app for **MakeMKV → HandBrake → Scout**. Rip one disc whil
 
 ## Quick start
 
-1. Open `app\Reel.exe` after building.
+1. Open `artifacts\app\Reel.exe` after building.
 2. On **Rip a disc**, refresh drives and inspect the inserted disc.
 3. Search TheTVDB and select the correct series/year. Reel reads the TVDB key and optional PIN saved by Scout; it does not copy credentials into its settings or logs.
 4. Choose raw and compressed **base folders**, then edit their folder formats. Live previews show where files will go.
@@ -78,7 +78,9 @@ Requires Windows, the **.NET 9 SDK**, and the **.NET 9 Windows Desktop Runtime**
 .\scripts\test.ps1
 ```
 
-Optionally bundle a locally installed CLI into the ignored app folder:
+Build scripts run from the repository root, regardless of the calling directory. The executable is published to `artifacts\app\Reel.exe`; build and intermediate files are stored under `artifacts\bin` and `artifacts\obj`. The entire `artifacts` folder is ignored by Git.
+
+Optionally bundle a locally installed CLI into `artifacts\app\handbrake`:
 
 ```powershell
 .\scripts\build.ps1 -HandBrakeCli 'C:\path\to\HandBrakeCLI.exe'
