@@ -1,6 +1,6 @@
 using System.IO;
 using System.Text.Json.Nodes;
-namespace Reel;
+namespace Ripley;
 public record HandBrakePreset(string Name, string Group, bool Custom, string Container, JsonObject Data)
 {
     public string Display => $"{Name} · {(Custom ? "Custom" : "Built-in")} · {Container}";
@@ -28,7 +28,7 @@ public static class Presets
         var root = JsonNode.Parse(File.ReadAllText(source)) as JsonObject ?? throw new IOException("Use an exported HandBrake preset JSON object.");
         // One uniquely named preset prevents a built-in name collision. Every
         // encoding option, including container, tracks and filters, is retained.
-        var name = "Reel-" + Guid.NewGuid().ToString("N");
+        var name = "Ripley-" + Guid.NewGuid().ToString("N");
         var preset = (JsonObject)selected.Data.DeepClone(); preset["PresetName"] = name; preset["Folder"] = false; preset["Type"] = 1;
         root["PresetList"] = new JsonArray(preset);
         var path = Path.Combine(directory,name + ".json"); QueueStore.Write(path,root);

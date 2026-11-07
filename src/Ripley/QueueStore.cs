@@ -1,6 +1,6 @@
 using System.IO;
 using System.Text.Json;
-namespace Reel;
+namespace Ripley;
 public static class QueueStore
 {
     public static void Write<T>(string path, T value)

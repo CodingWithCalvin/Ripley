@@ -1,6 +1,6 @@
 using System.Globalization;
 using System.Text.RegularExpressions;
-namespace Reel;
+namespace Ripley;
 
 public record DiscLabelHints(int? Season, int? Volume, int? DiscNumber)
 {

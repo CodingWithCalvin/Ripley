@@ -5,8 +5,8 @@ $output = Join-Path $root 'artifacts\app'
 if ($HandBrakeCli) { $HandBrakeCli = (Resolve-Path -LiteralPath $HandBrakeCli).Path }
 Push-Location $root
 try {
-    & dotnet publish 'src\Reel\Reel.csproj' -c Release -o $output --no-self-contained
-    if ($LASTEXITCODE -ne 0) { throw 'Reel build failed.' }
+    & dotnet publish 'src\Ripley\Ripley.csproj' -c Release -o $output --no-self-contained
+    if ($LASTEXITCODE -ne 0) { throw 'Ripley build failed.' }
     if ($HandBrakeCli) {
         $runtime = Join-Path $output 'handbrake'
         New-Item -ItemType Directory -Force $runtime | Out-Null
@@ -15,5 +15,5 @@ try {
             Copy-Item -LiteralPath $HandBrakeCli -Destination $destination -Force
         }
     }
-    Write-Output (Join-Path $output 'Reel.exe')
+    Write-Output (Join-Path $output 'Ripley.exe')
 } finally { Pop-Location }

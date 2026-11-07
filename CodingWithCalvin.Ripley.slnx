@@ -1,0 +1,10 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Ripley/Ripley.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/FakeCli/FakeCli.csproj" />
+    <Project Path="tests/Ripley.Tests/Ripley.Tests.csproj" />
+    <Project Path="tests/Ripley.Desktop.Tests/Ripley.Desktop.Tests.csproj" />
+  </Folder>
+</Solution>

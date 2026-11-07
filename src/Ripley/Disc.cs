@@ -2,7 +2,7 @@ using System.Globalization;
 using System.IO;
 using System.Security.Cryptography;
 using System.Text;
-namespace Reel;
+namespace Ripley;
 
 public record OpticalDrive(int Index, string Name, string Label, string Device)
 {

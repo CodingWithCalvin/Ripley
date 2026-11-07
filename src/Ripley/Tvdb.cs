@@ -6,7 +6,7 @@ using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 using System.Text.Json;
 using System.Text.Json.Nodes;
-namespace Reel;
+namespace Ripley;
 public record SeriesIdentity(string Provider, string Id, string Name, string Year, string Overview)
 {
     public string Display => $"{Name} ({Year}) · TVDB {Id}";
@@ -35,7 +35,7 @@ public static class Tvdb
     static void Check(HttpResponseMessage response) { if(!response.IsSuccessStatusCode) throw new IOException($"TVDB returned HTTP {(int)response.StatusCode}. Check Scout's TVDB key/PIN and your connection."); }
 }
 // Read-only adapter for Scout's protected credentials, including its SQLite store.
-// Keys/PINs stay in memory and are never copied into Reel settings or logs.
+// Keys/PINs stay in memory and are never copied into Ripley settings or logs.
 public static class ScoutCredentials
 {
     [StructLayout(LayoutKind.Sequential)] struct Blob { public int Size; public IntPtr Data; }
@@ -61,7 +61,7 @@ public static class ScoutCredentials
                 if(keys?.TryGetValue("metadata|tvdb",out var key) == true && !string.IsNullOrWhiteSpace(key)) return(key,keys.GetValueOrDefault("metadata|tvdb-pin"));
             } finally { if(plain != null) CryptographicOperations.ZeroMemory(plain); Marshal.Copy(new byte[data.Length],0,input.Data,data.Length); Marshal.FreeHGlobal(input.Data); if(output.Data != IntPtr.Zero) { Marshal.Copy(new byte[output.Size],0,output.Data,output.Size); LocalFree(output.Data); } }
         }
-        throw new IOException("No readable TVDB key found in Scout. Save it in Scout > Settings > Show discovery, or choose Scout's data folder in Reel.");
+        throw new IOException("No readable TVDB key found in Scout. Save it in Scout > Settings > Show discovery, or choose Scout's data folder in Ripley.");
     }
     static IEnumerable<byte[]> Blobs(string folder)
     {

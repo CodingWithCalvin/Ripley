@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup><OutputType>Exe</OutputType><TargetFramework>net9.0</TargetFramework><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable></PropertyGroup>
+  <ItemGroup>
+    <Compile Include="../../src/Ripley/AppStorage.cs" Link="AppStorage.cs"/>
+    <Compile Include="../../src/Ripley/FileNames.cs" Link="FileNames.cs"/>
+    <Compile Include="../../src/Ripley/RawRip.cs" Link="RawRip.cs"/>
+    <Compile Include="../../src/Ripley/Engine.cs" Link="Engine.cs"/>
+    <Compile Include="../../src/Ripley/Disc.cs" Link="Disc.cs"/>
+    <Compile Include="../../src/Ripley/RipQueue.cs" Link="RipQueue.cs"/>
+    <Compile Include="../../src/Ripley/Presets.cs" Link="Presets.cs"/>
+    <Compile Include="../../src/Ripley/QueueStore.cs" Link="QueueStore.cs"/>
+    <Compile Include="../../src/Ripley/Tvdb.cs" Link="Tvdb.cs"/>
+    <Compile Include="../../src/Ripley/FolderNames.cs" Link="FolderNames.cs"/>
+  <Compile Include="../../src/Ripley/DiscLabelHints.cs" Link="DiscLabelHints.cs"/></ItemGroup>
+</Project>

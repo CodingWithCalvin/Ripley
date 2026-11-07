@@ -2,11 +2,14 @@ using System.IO;
 using System.Diagnostics;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
-namespace Reel;
+namespace Ripley;
 
 public sealed class Job : INotifyPropertyChanged
 {
-    public Options? Encoding { get; set; }
+    public string QueueId { get; set; } = "default";
+    public string QueueName { get; set; } = "Saved queue";
+    Options? encoding;
+    public Options? Encoding { get => encoding; set { encoding = value; Changed(); Changed(nameof(OutputPath)); } }
     public string Error { get; set; } = "";
     public SeriesIdentity? Series { get; set; }
     public string Season { get; set; } = "";
@@ -16,8 +19,11 @@ public sealed class Job : INotifyPropertyChanged
     public long SourceSize { get; set; }
     public DateTime SourceModified { get; set; }
     public string Source { get; set; } = "";
+    public string OriginalFilename { get; set; } = "";
     string name = "", status = "Queued";
-    public string Name { get => name; set { name = value; Changed(); } }
+    public string Name { get => name; set { name = value; Changed(); Changed(nameof(OutputPath)); } }
+    [System.Text.Json.Serialization.JsonIgnore]
+    public string OutputPath => Encoding is { Output.Length: > 0 } options ? Path.Combine(options.Output, Name) : "";
     public string Status { get => status; set { status = value; Changed(); } }
     public event PropertyChangedEventHandler? PropertyChanged;
     void Changed([CallerMemberName] string? n = null) => PropertyChanged?.Invoke(this, new(n));
@@ -30,7 +36,7 @@ public static class Engine
         var stem = Path.GetFileNameWithoutExtension(name); var ext = Path.GetExtension(name);
         for (int i = 1; ; i++) {
             var candidate = i == 1 ? name : $"{stem} ({i}){ext}";
-            if (!File.Exists(Path.Combine(directory, candidate)) && !File.Exists(Path.Combine(directory, candidate + ".reel.json")) && !Directory.Exists(Path.Combine(directory, candidate)) && !(reserved?.Contains(candidate) ?? false)) {
+            if (!File.Exists(Path.Combine(directory, candidate)) && !DataFiles.Sidecars.Any(s => File.Exists(Path.Combine(directory, candidate + s))) && !Directory.Exists(Path.Combine(directory, candidate)) && !(reserved?.Contains(candidate) ?? false)) {
                 reserved?.Add(candidate); return candidate;
             }
         }
@@ -46,7 +52,7 @@ public static class Engine
             if (full.Equals(dest, StringComparison.OrdinalIgnoreCase) || full.StartsWith(dest + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase)) throw new IOException("Source folders cannot be inside the output directory.");
             var opts = new EnumerationOptions { RecurseSubdirectories = recursive, IgnoreInaccessible = false, AttributesToSkip = FileAttributes.ReparsePoint };
             foreach (var file in Directory.EnumerateFiles(full, "*", opts).OrderBy(x => x, StringComparer.OrdinalIgnoreCase)) {
-                if (!Path.GetExtension(file).Equals(".mkv", StringComparison.OrdinalIgnoreCase) || file.StartsWith(dest + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase) || !seen.Add(file)) continue;
+                if (!Path.GetExtension(file).Equals(".mkv", StringComparison.OrdinalIgnoreCase) || RawRip.IsStagingFile(file) || file.StartsWith(dest + Path.DirectorySeparatorChar, StringComparison.OrdinalIgnoreCase) || !seen.Add(file)) continue;
                 var context = new DirectoryInfo(full).Name + " - " + Path.ChangeExtension(Path.GetRelativePath(full, file), null).Replace(Path.DirectorySeparatorChar, '_');
                 foreach (var c in Path.GetInvalidFileNameChars()) context = context.Replace(c, '_');
                 context = context.Trim().TrimEnd('.');
@@ -97,7 +103,7 @@ public static class Engine
     {
         void CheckSource() { var stat = new FileInfo(job.Source); if(stat.Length != job.SourceSize || stat.LastWriteTimeUtc != job.SourceModified) throw new IOException("Source changed since scanning; let MakeMKV finish, then preview again."); }
         CheckSource();
-        var scratch = Path.Combine(o.Output, ".reel-" + Guid.NewGuid().ToString("N"));
+        var scratch = Path.Combine(o.Output, ".ripley-" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(scratch);
         var temp = Path.Combine(scratch, "encoding" + o.Extension);
         try {
