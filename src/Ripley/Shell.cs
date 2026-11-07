@@ -40,6 +40,7 @@ public partial class MainWindow
     void RefreshShell()
     {
         UpdateOutputSummary();
+        if(currentPage=="Rip")PageSubtitle.Text=RipLocked?LockedRipMessage:"Save raw files and disc metadata. Reopen sessions from history, or choose New Ripley for the next disc.";
         NewRipleyButton.IsEnabled=!discBusy&&!adding;
         RipSetup.IsEnabled=!discBusy&&EditableRip;
         InspectButton.IsEnabled=RipButton.IsEnabled=!discBusy&&!driveScanRunning&&EditableRip;
@@ -69,9 +70,11 @@ public partial class MainWindow
         StartSelectedButton.Visibility=ResumeButton.Visibility;
         StartSelectedButton.IsEnabled=ResumeButton.IsEnabled&&QueueList.SelectedItem is QueueGroup {Id.Length:>0} selected&&jobs.Any(j=>j.QueueId==selected.Id&&j.Status is "Waiting" or "Queued" or "Paused" or "Failed");
         ClearQueueButton.IsEnabled=jobs.Count>0&&!clearingQueue&&!adding;
-        StartButton.Content=QueueRipButton.Content=AcceptsRunningJobs?"Add to running queue":"Add to queue";
+        StartButton.Content=AcceptsRunningJobs?"Add to running queue":"Add to queue";
+        QueueRipButton.Content=RipLocked?"Added to queue":StartButton.Content;
         QueueRipButton.Visibility=lastRipFiles.Count>0?Visibility.Visible:Visibility.Collapsed;
-        QueueRipButton.IsEnabled=!discBusy&&!adding&&!clearingQueue;
+        QueueRipButton.IsEnabled=!RipLocked&&!discBusy&&!adding&&!clearingQueue;
+        QueueRipButton.ToolTip=RipLocked?"This run is locked. Use New Ripley for the next disc, or Add existing rips to compress its raw files again.":"Add this disc's completed files using the compression settings.";
         QueueStateText.Text=clearingQueue?"Stopping the current encode and clearing queue entries. Raw files and completed outputs are kept."
             :encoding&&paused?"Stopping the current encode. Pending jobs are retained."
             :encoding&&pauseAfterCurrent?"Pausing after the current file finishes and saves. New additions will wait."

@@ -160,13 +160,14 @@ public partial class MainWindow : Window
     }
     async void InspectDisc(object s,RoutedEventArgs e)
     {
+        if(RipLocked){Status.Text=LockedRipMessage;return;}
         if(discBusy||driveScanRunning)return;
         if(DriveChoice.SelectedItem is not OpticalDrive drive) { RipStatus.Text="Refresh and select an optical drive first."; return; }
         EnsureRipSession();SetDiscBusy(true); discCancel=new(); RipProgress.Value=0;SetRipSessionStatus("Inspecting");
         try { RipStatus.Text="Inspecting title and track metadata…"; inspected=await Disc.Inspect(MakeMkv.Text.Trim(),drive.Source,DiscLog,discCancel.Token); inspectedSource=drive.Source;
             if(inspected.Label.Length>0) DiscLabel.Text=inspected.Label;
             UpdateNamingPreview();
-            var min=MinSeconds();PrepareRipQueue(inspected,min);RipPage.ScrollToTop(); RipStatus.Text=$"{inspected.Label} · {inspected.Titles.Count} titles · {inspected.Titles.Count(t=>t.Qualifies(min))} meet the {min}s cutoff.";
+            var min=MinSeconds();PrepareRipQueue(inspected,min);RipSetupScroll.ScrollToTop(); RipStatus.Text=$"{inspected.Label} · {inspected.Titles.Count} titles · {inspected.Titles.Count(t=>t.Qualifies(min))} meet the {min}s cutoff.";
         } catch(OperationCanceledException) { RipStatus.Text="Inspection cancelled."; } catch(Exception ex) { RipStatus.Text=ex.Message; } finally { SetRipSessionStatus("Draft");discCancel.Dispose();discCancel=null;SetDiscBusy(false); }
     }
     void ShowDiscDetails(object s,RoutedEventArgs e)
@@ -180,6 +181,7 @@ public partial class MainWindow : Window
     async void RipDisc(object s,RoutedEventArgs e) => await RipDiscCore();
     async Task RipDiscCore()
     {
+        if(RipLocked){Status.Text=LockedRipMessage;return;}
         if(discBusy||driveScanRunning) return;
         if(DriveChoice.SelectedItem is not OpticalDrive drive) { RipStatus.Text="Refresh and select an optical drive first.";return; }
         EnsureRipSession();SetDiscBusy(true); discCancel=new(); var token=discCancel.Token; string? folder=null;RawRip? activeRip=null;
@@ -196,7 +198,7 @@ public partial class MainWindow : Window
             if(inspected!=null&&inspectedSource==drive.Source&&inspected.Fingerprint!=current.Fingerprint) { inspected=null; throw new IOException("The disc changed since inspection. Inspect it again before ripping."); }
             inspected=current; inspectedSource=drive.Source;
             if(!current.Titles.Any(t=>t.Qualifies(min))) throw new IOException("No titles meet the minimum length.");
-            PrepareRipQueue(current,min);RipPage.ScrollToTop();
+            PrepareRipQueue(current,min);RipSetupScroll.ScrollToTop();
             if(label.Length==0) {
                 label=current.Label;DiscLabel.Text=label;
                 if(AutoSeason.IsChecked==true) { season=SeasonValue();volume=NumberValue(Volume,"Volume number");discNumber=NumberValue(DiscNumber,"Disc number"); }
@@ -268,7 +270,7 @@ public partial class MainWindow : Window
             if(jobs.Any(j=>j.Source.Equals(job.Source,StringComparison.OrdinalIgnoreCase)&&j.Encoding?.Output.Equals(options.Output,StringComparison.OrdinalIgnoreCase)==true)) continue;
             job.Name=Engine.Unique(options.Output,job.Name,names);job.Encoding=options;job.PresetDisplay=preset;job.Status=AcceptsRunningJobs?"Queued":"Waiting";jobs.Add(job);added++;
         }
-        PersistQueue();UpdateQueue();return added;
+        PersistQueue();LockQueuedRips();UpdateQueue();return added;
     }
     void Stop(object s,RoutedEventArgs e) { paused=true;pauseAfterCurrent=false;encodingCancel?.Cancel();foreach(var j in jobs.Where(j=>j.Status=="Queued")) j.Status="Paused";Status.Text="Stopping compression; pending jobs are retained.";PersistQueue();UpdateQueue(); }
     async void Resume(object s,RoutedEventArgs e)

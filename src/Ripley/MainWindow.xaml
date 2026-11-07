@@ -100,95 +100,69 @@
           <TextBlock x:Name="PageSubtitle" Text="Insert a disc, choose the series, and set your folders and filenames." Foreground="{StaticResource MutedBrush}" FontSize="12" TextWrapping="Wrap" Margin="0,4,0,12" />
 
         </StackPanel>
-        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" x:Name="RipPage" Grid.Row="1" Visibility="Collapsed">
-          <StackPanel Margin="0">
-            <Border x:Name="RipQueuePanel" Style="{StaticResource Card}" Margin="0,0,0,12" Visibility="Collapsed">
-              <StackPanel>
-                <TextBlock Text="Ripping queue" FontSize="17" FontWeight="SemiBold" />
-                <TextBlock x:Name="RipQueueSummary" Foreground="{StaticResource AccentBrush}" TextWrapping="Wrap" Margin="0,8,0,5" />
-                <ProgressBar x:Name="RipOverallProgress" Height="5" Maximum="100" Margin="0,0,0,8" />
-                <TextBlock x:Name="RipFileActivity" TextWrapping="Wrap" Foreground="{StaticResource MutedBrush}" Margin="0,0,0,10" />
-                <DataGrid x:Name="RipGrid" Height="195">
-                  <DataGrid.Columns>
-                    <DataGridTextColumn Header="#" Binding="{Binding Number}" Width="35" />
-                    <DataGridTextColumn Header="Raw filename" Binding="{Binding Name}" Width="*" />
-                    <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="125" />
-                    <DataGridTemplateColumn Header="Progress" Width="110">
-                      <DataGridTemplateColumn.CellTemplate>
-                        <DataTemplate>
-                          <Grid Margin="6,0">
-                            <ProgressBar Value="{Binding Progress}" Maximum="100" Height="5" VerticalAlignment="Bottom" Margin="0,0,0,3" />
-                            <TextBlock Text="{Binding Progress, StringFormat={}{0:0}%}" HorizontalAlignment="Center" Margin="0,0,0,7" />
-                          </Grid>
-                        </DataTemplate>
-                      </DataGridTemplateColumn.CellTemplate>
-                    </DataGridTemplateColumn>
-                    <DataGridTextColumn Header="Written" Binding="{Binding Size}" Width="85" />
-                  </DataGrid.Columns>
-                </DataGrid>
-                <TextBlock Text="Filenames appear as MakeMKV creates them. Written files are confirmed as Saved after the complete rip and filename finalization." Foreground="{StaticResource MutedBrush}" FontSize="12" TextWrapping="Wrap" Margin="0,8,0,0" />
-              </StackPanel>
-            </Border>
-            <Grid x:Name="RipSetup">
-              <Grid.RowDefinitions>
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
-                <RowDefinition Height="Auto" />
-              </Grid.RowDefinitions>
-              <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*" />
-                <ColumnDefinition Width="*" />
-              </Grid.ColumnDefinitions>
-              <Border Style="{StaticResource Card}" Grid.Row="0" Grid.Column="0" Grid.ColumnSpan="1" Margin="0,0,12,12">
+        <Grid x:Name="RipPage" Grid.Row="1" Visibility="Collapsed">
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="2*" MinWidth="320" MaxWidth="400" />
+            <ColumnDefinition Width="3*" />
+          </Grid.ColumnDefinitions>
+          <ScrollViewer x:Name="RipSetupScroll" Grid.Column="0" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Margin="0,0,12,0">
+            <StackPanel x:Name="RipSetup">
+              <Border Style="{StaticResource Card}" Margin="0,0,0,12">
                 <StackPanel Margin="0">
                   <TextBlock Text="01   Insert a disc" FontWeight="SemiBold" FontSize="17" />
                   <DockPanel>
                     <Button x:Name="RefreshButton" Content="Refresh" DockPanel.Dock="Right" Click="RefreshDrives" Margin="8,5,0,10" ToolTip="Drives refresh automatically on launch and when Windows reports a disc or drive change. Use Refresh to check again." />
                     <ComboBox x:Name="DriveChoice" DisplayMemberPath="Display" SelectionChanged="DriveChanged" />
                   </DockPanel>
-                  <TextBlock Text="Disc label · detected automatically, editable" />
+                  <TextBlock Text="Disc label · detected automatically, editable" TextWrapping="Wrap" />
                   <TextBox x:Name="DiscLabel" TextChanged="NamingChanged" Margin="0,5,0,10" />
-                  <WrapPanel>
-                    <TextBlock Text="Minimum title length (seconds)" VerticalAlignment="Center" />
-                    <TextBox x:Name="Minimum" Text="120" Width="65" Margin="12,0,12,0" />
-                    <Button Content="View disc details" Click="ShowDiscDetails" />
-                  </WrapPanel>
+                  <DockPanel>
+                    <TextBox x:Name="Minimum" Text="120" Width="65" DockPanel.Dock="Right" Margin="8,0,0,0" />
+                    <TextBlock Text="Minimum title length (seconds)" TextWrapping="Wrap" VerticalAlignment="Center" />
+                  </DockPanel>
+                  <Button Content="View disc details" Click="ShowDiscDetails" HorizontalAlignment="Left" Margin="0,8,0,0" />
                   <TextBlock Text="Titles below the cutoff are skipped. Raw files are always kept." Foreground="#A1B8AA" TextWrapping="Wrap" Margin="0,8,0,0" />
                 </StackPanel>
               </Border>
-              <Border Style="{StaticResource Card}" Grid.Row="0" Grid.Column="1" Grid.ColumnSpan="1" Margin="0,0,0,12">
+              <Border Style="{StaticResource Card}" Margin="0,0,0,12">
                 <StackPanel Margin="0">
                   <TextBlock Text="02   Choose the series" FontWeight="SemiBold" FontSize="17" />
                   <DockPanel Margin="0,5,0,7">
                     <Button x:Name="SearchButton" Content="Search TVDB" DockPanel.Dock="Right" Click="SearchSeries" Margin="8,0,0,0" />
                     <TextBox x:Name="SeriesQuery" ToolTip="Search by series name" KeyDown="SeriesQueryKeyDown" />
                   </DockPanel>
-                  <ListBox x:Name="SeriesResults" DisplayMemberPath="Display" Height="64" SelectionChanged="SeriesChanged" />
+                  <ListBox x:Name="SeriesResults" DisplayMemberPath="Display" Height="64" SelectionChanged="SeriesChanged">
+                    <ListBox.Style>
+                      <Style TargetType="ListBox" BasedOn="{StaticResource {x:Type ListBox}}">
+                        <Setter Property="Template"><Setter.Value><ControlTemplate TargetType="ListBox"><Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="1"><ScrollViewer Focusable="False" HorizontalScrollBarVisibility="Disabled"><ItemsPresenter /></ScrollViewer></Border></ControlTemplate></Setter.Value></Setter>
+                        <Style.Triggers>
+                          <Trigger Property="HasItems" Value="False"><Setter Property="Visibility" Value="Collapsed" /></Trigger>
+                          <Trigger Property="IsEnabled" Value="False"><Setter Property="Opacity" Value="0.6" /></Trigger>
+                        </Style.Triggers>
+                      </Style>
+                    </ListBox.Style>
+                  </ListBox>
                   <TextBlock x:Name="SearchStatus" Foreground="#A1B8AA" TextWrapping="Wrap" Margin="0,4,0,4" />
                   <DockPanel>
                     <Button Content="Clear" Click="ClearSeries" DockPanel.Dock="Right" Padding="8,3" Margin="8,0,0,0" />
                     <TextBlock x:Name="SelectedSeriesText" Text="No series selected" FontWeight="SemiBold" TextWrapping="Wrap" />
                   </DockPanel>
                   <TextBlock x:Name="SeriesOverview" Visibility="Collapsed" />
-                  <WrapPanel Margin="0,8,0,0">
-                    <StackPanel Margin="0,0,12,0">
-                      <TextBlock Text="Season" />
-                      <TextBox x:Name="Season" TextChanged="SeasonEdited" Width="65" Margin="0,4,0,0" />
-                    </StackPanel>
-                    <StackPanel Margin="0,0,12,0">
-                      <TextBlock Text="Volume number" />
-                      <TextBox x:Name="Volume" TextChanged="SeasonEdited" Width="90" Margin="0,4,0,0" HorizontalAlignment="Left" />
-                    </StackPanel>
-                    <StackPanel>
-                      <TextBlock Text="Disc number" />
-                      <TextBox x:Name="DiscNumber" TextChanged="SeasonEdited" Width="90" Margin="0,4,0,0" HorizontalAlignment="Left" />
-                    </StackPanel>
-                  </WrapPanel>
+                  <Grid Margin="0,8,0,0">
+                    <Grid.ColumnDefinitions><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /><ColumnDefinition Width="*" /></Grid.ColumnDefinitions>
+                    <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+                    <TextBlock Text="Season" FontSize="12" />
+                    <TextBlock Text="Volume number" FontSize="12" Grid.Column="1" TextWrapping="Wrap" />
+                    <TextBlock Text="Disc number" FontSize="12" Grid.Column="2" TextWrapping="Wrap" />
+                    <TextBox x:Name="Season" TextChanged="SeasonEdited" Grid.Row="1" Margin="0,4,8,0" />
+                    <TextBox x:Name="Volume" TextChanged="SeasonEdited" Grid.Row="1" Grid.Column="1" Margin="0,4,8,0" />
+                    <TextBox x:Name="DiscNumber" TextChanged="SeasonEdited" Grid.Row="1" Grid.Column="2" Margin="0,4,0,0" />
+                  </Grid>
                   <CheckBox x:Name="AutoSeason" Content="Auto from disc label" IsChecked="True" Margin="0,8,0,0" Checked="AutoSeasonChanged" Unchecked="AutoSeasonChanged" />
                   <TextBlock x:Name="SeasonHint" Foreground="#A1B8AA" FontSize="12" TextWrapping="Wrap" Margin="0,5,0,0" />
                 </StackPanel>
               </Border>
-              <Border Style="{StaticResource Card}" Grid.Row="1" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,0,0,12">
+              <Border Style="{StaticResource Card}" Margin="0,0,0,12">
                 <StackPanel Margin="0">
                   <TextBlock Text="03   Raw-rip folders" FontWeight="SemiBold" FontSize="17" />
                   <TextBlock Text="Base folder" Margin="0,7,0,0" />
@@ -201,20 +175,65 @@
                   <TextBlock x:Name="RawPathPreview" TextWrapping="Wrap" Foreground="#78D6A1" FontSize="12" />
                 </StackPanel>
               </Border>
-
-              <Border Style="{StaticResource Card}" Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="2" Margin="0,0,0,12">
+              <Border Style="{StaticResource Card}" Margin="0,0,0,12">
                 <StackPanel Margin="0">
-                  <TextBlock Text="Raw filename prefix" FontWeight="SemiBold" FontSize="17" />
+                  <TextBlock Text="04   Raw filename prefix" FontWeight="SemiBold" FontSize="17" />
                   <TextBox x:Name="FilenamePrefix" TextChanged="NamingChanged" Margin="0,5,0,5" ToolTip="{}{volume_number}_{disc_number}_" />
                   <TextBlock x:Name="FilenamePreview" Foreground="#78D6A1" FontSize="12" TextWrapping="Wrap" />
-                  <TextBlock Text="MakeMKV’s original filename follows the prefix. Raw files and disc metadata are kept. When the rip finishes, you can choose to add just those files to Compress." Foreground="#A1B8AA" FontSize="12" TextWrapping="Wrap" Margin="0,5,0,0" />
+                  <TextBlock Text="MakeMKV’s original filename follows the prefix. Raw files and disc metadata are kept. When the rip finishes, you can choose to add just those files to the Compression Queue." Foreground="#A1B8AA" FontSize="12" TextWrapping="Wrap" Margin="0,5,0,0" />
                 </StackPanel>
               </Border>
-            </Grid>
-            <TextBlock Text="{}{series}  {year}  {tvdb_id}  {season:00}  {volume_number:00}  {disc_number:00}  {disc_label}  {date} · Use \ for subfolders." Foreground="#A1B8AA" TextWrapping="Wrap" FontSize="12" Margin="0,10,0,4" />
+            <WrapPanel Margin="0,10,0,4">
+              <WrapPanel.Resources><Style TargetType="TextBlock"><Setter Property="FontSize" Value="12" /><Setter Property="Foreground" Value="#A1B8AA" /><Setter Property="Margin" Value="0,0,8,4" /></Style></WrapPanel.Resources>
+              <TextBlock Text="{}{series}" /><TextBlock Text="{}{year}" /><TextBlock Text="{}{tvdb_id}" /><TextBlock Text="{}{season:00}" /><TextBlock Text="{}{volume_number:00}" /><TextBlock Text="{}{disc_number:00}" /><TextBlock Text="{}{disc_label}" /><TextBlock Text="{}{date}" />
+            </WrapPanel>
+            <TextBlock Text="Use \ for subfolders." Foreground="#A1B8AA" FontSize="12" Margin="0,0,0,4" />
             <TextBlock Text="The folder formats choose the destinations. Files from multiple discs can share those folders; filename collisions get (2), (3), …." Foreground="#A1B8AA" TextWrapping="Wrap" FontSize="12" Margin="0,0,0,10" />
-          </StackPanel>
-        </ScrollViewer>
+            </StackPanel>
+          </ScrollViewer>
+          <Border Grid.Column="1" Style="{StaticResource Card}" Margin="0">
+            <Grid>
+              <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /><RowDefinition Height="Auto" /></Grid.RowDefinitions>
+              <TextBlock Text="Ripping queue" FontSize="17" FontWeight="SemiBold" Margin="0,0,0,10" />
+              <Grid x:Name="RipQueuePanel" Grid.Row="1" Visibility="Collapsed">
+                <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
+                <TextBlock x:Name="RipQueueSummary" Foreground="{StaticResource AccentBrush}" TextWrapping="Wrap" Margin="0,0,0,8" />
+                <ProgressBar x:Name="RipOverallProgress" Grid.Row="1" Height="5" Maximum="100" Margin="0,0,0,8" />
+                <TextBlock x:Name="RipFileActivity" Grid.Row="2" TextWrapping="Wrap" Foreground="{StaticResource MutedBrush}" Margin="0,0,0,10" />
+                <DataGrid x:Name="RipGrid" Grid.Row="3" RowHeight="NaN" MinRowHeight="44" VirtualizingPanel.ScrollUnit="Pixel">
+                  <DataGrid.Columns>
+                    <DataGridTextColumn Header="#" Binding="{Binding Number}" Width="30" />
+                    <DataGridTextColumn Header="Raw filename" Binding="{Binding Name}" Width="*" MinWidth="110">
+                      <DataGridTextColumn.ElementStyle><Style TargetType="TextBlock"><Setter Property="TextWrapping" Value="Wrap" /><Setter Property="Margin" Value="6,8" /><Setter Property="ToolTip" Value="{Binding Name}" /></Style></DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+                    <DataGridTextColumn Header="Status" Binding="{Binding Status}" Width="100">
+                      <DataGridTextColumn.ElementStyle><Style TargetType="TextBlock"><Setter Property="TextWrapping" Value="Wrap" /><Setter Property="Margin" Value="6,8" /></Style></DataGridTextColumn.ElementStyle>
+                    </DataGridTextColumn>
+                    <DataGridTemplateColumn Header="Progress" Width="80">
+                      <DataGridTemplateColumn.CellTemplate>
+                        <DataTemplate>
+                          <Grid Margin="6,0" MinHeight="40">
+                            <ProgressBar Value="{Binding Progress}" Maximum="100" Height="5" VerticalAlignment="Bottom" Margin="0,0,0,3" />
+                            <TextBlock Text="{Binding Progress, StringFormat={}{0:0}%}" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,0,0,7" />
+                          </Grid>
+                        </DataTemplate>
+                      </DataGridTemplateColumn.CellTemplate>
+                    </DataGridTemplateColumn>
+                    <DataGridTextColumn Header="Written" Binding="{Binding Size}" Width="70" />
+                  </DataGrid.Columns>
+                </DataGrid>
+              </Grid>
+              <StackPanel Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center" MaxWidth="310" Margin="12">
+                <StackPanel.Style>
+                  <Style TargetType="StackPanel"><Style.Triggers><DataTrigger Binding="{Binding Visibility, ElementName=RipQueuePanel}" Value="Visible"><Setter Property="Visibility" Value="Collapsed" /></DataTrigger></Style.Triggers></Style>
+                </StackPanel.Style>
+                <TextBlock Text="Ready for a disc" FontSize="18" FontWeight="SemiBold" TextAlignment="Center" />
+                <TextBlock Text="Inspect a disc to see its title count. Filenames and progress appear here as MakeMKV writes the raw files." Foreground="{StaticResource MutedBrush}" TextWrapping="Wrap" TextAlignment="Center" Margin="0,10,0,0" />
+              </StackPanel>
+              <TextBlock Grid.Row="2" Text="Filenames appear as MakeMKV creates them. Written files are confirmed as Saved after the complete rip and filename finalization." Foreground="{StaticResource MutedBrush}" FontSize="12" TextWrapping="Wrap" Margin="0,12,0,0" />
+            </Grid>
+          </Border>
+        </Grid>
         <Grid x:Name="CompressPage" Grid.Row="1" Visibility="Collapsed">
           <Grid.RowDefinitions><RowDefinition Height="Auto" /><RowDefinition Height="*" /></Grid.RowDefinitions>
           <WrapPanel Margin="0,0,0,12">

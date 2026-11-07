@@ -54,6 +54,7 @@ class Program
         Configure(window,temp,fake,preset);
         CheckHistory(window,temp);
         await CheckRip(window,temp,fake);
+        await CheckLockedHistory(temp,fake,preset);
         await CheckQueues(window,temp,fake);
         await CheckStopAndPause(window,temp,fake);
         Call(window,"SavePreferences",window,new RoutedEventArgs());
@@ -62,17 +63,23 @@ class Program
         var restored=new MainWindow(Path.Combine(temp,"state"));
         Check(Jobs(restored).Count==Jobs(window).Count&&!((bool)Field(restored,"encoding")!),"Restoring multiple queues never starts processing");
         var history=(ObservableCollection<RipSession>)Field(restored,"ripHistory")!;
-        var completed=history.First(h=>h.Status=="Completed");Control<ListBox>(restored,"HistoryList").SelectedItem=completed;
+        var completed=history.First(h=>h.Status=="Completed"&&!h.IsLocked);Control<ListBox>(restored,"HistoryList").SelectedItem=completed;
         Check(((List<Job>)Field(restored,"lastRipFiles")!).Select(j=>j.Source).SequenceEqual(completed.Files.Select(j=>j.Source))&&!Control<Button>(restored,"RipButton").IsEnabled&&Control<Button>(restored,"QueueRipButton").Visibility==Visibility.Visible,"Completed history restores exact raw files for queueing without reripping");
         completed.Status="Ripping";Call(restored,"SaveHistory");
         var recovered=new MainWindow(Path.Combine(temp,"state"));
         Check(((ObservableCollection<RipSession>)Field(recovered,"ripHistory")!).Single(h=>h.Id==completed.Id).Status=="Interrupted"&&!(bool)Field(recovered,"discBusy")!,"Interrupted history is recovered without restarting a physical disc operation");
         if(renders!=null) {
             Directory.CreateDirectory(renders);
+            var selection=Control<ListBox>(window,"HistoryList").SelectedItem;
+            Control<ListBox>(window,"HistoryList").SelectedItem=((ObservableCollection<RipSession>)Field(window,"ripHistory")!).First(s=>s.IsLocked);
+            await Render(window,1440,920,Path.Combine(renders,"rip-locked.png"));
+            Control<ListBox>(window,"HistoryList").SelectedItem=selection;
             Call(window,"ShowCompressionQueue");await Render(window,1440,920,Path.Combine(renders,"compress.png"));await Render(window,1080,740,Path.Combine(renders,"compress-minimum.png"));
             Call(window,"ShowSources",window,new RoutedEventArgs());await Render(window,1440,920,Path.Combine(renders,"compress-sources.png"));
             Call(window,"ShowCompressionSettings",window,new RoutedEventArgs());await Render(window,1440,920,Path.Combine(renders,"compress-output.png"));await Render(window,1080,740,Path.Combine(renders,"compress-options.png"));
-            Call(window,"ShowPage","Rip");await Render(window,1080,740,Path.Combine(renders,"rip.png"));
+            Call(window,"ShowPage","Rip");await Render(window,1440,920,Path.Combine(renders,"rip.png"));await Render(window,1080,740,Path.Combine(renders,"rip-minimum.png"));
+            Control<ScrollViewer>(window,"RipSetupScroll").ScrollToBottom();await Render(window,1080,740,Path.Combine(renders,"rip-folders.png"));
+            Call(window,"NewRipley",window,new RoutedEventArgs());await Render(window,1440,920,Path.Combine(renders,"rip-new.png"));
         }
         await CheckClear(window,temp,fake);
     }
@@ -149,7 +156,7 @@ class Program
         Check(((ObservableCollection<RipSession>)Field(restored,"ripHistory")!).Count==2&&((RipSession)Field(restored,"currentRipSession")!).Id==second.Id&&Text(restored,"Season").Text=="2","History and its selected draft survive reopening");
         Control<ListBox>(w,"HistoryList").SelectedItem=first;Text(w,"DiscNumber").Text="2";
         Call(w,"ShowCompressionQueue");Call(w,"OpenRipHistory",new Button{DataContext=first},new RoutedEventArgs());
-        Check(Control<ScrollViewer>(w,"RipPage").Visibility==Visibility.Visible&&history.Count==2,"Reopening the selected history item returns from compression without creating a new session");
+        Check(Control<FrameworkElement>(w,"RipPage").Visibility==Visibility.Visible&&history.Count==2,"Reopening the selected history item returns from compression without creating a new session");
         Check(w.FindName("NavRip")==null&&w.FindName("NavCompress")==null&&Control<Button>(w,"SideCompress").Visibility==Visibility.Visible,"Sidebar navigation replaces the Rip and Compress header tabs");
     }
     static void Configure(MainWindow w,string temp,string fake,string preset)
@@ -174,13 +181,54 @@ class Program
         var first=ripped[0].Source;
         await (Task)Call(w,"RipDiscCore")!;
         Check(File.Exists(first)&&((List<Job>)Field(w,"lastRipFiles")!)[0].Source!=first,"Repeated raw filenames remain collision safe");
+        bool failed=false;try{await (Task)Call(w,"AddCompletedRip")!;}catch(IOException){failed=true;}
+        Check(failed&&!((RipSession)Field(w,"currentRipSession")!).IsLocked&&Jobs(w).Count==0&&Control<Button>(w,"QueueRipButton").IsEnabled,"A failed queue addition leaves the completed run available to retry");
         Control<ComboBox>(w,"PresetChoice").SelectedItem=preset;Text(w,"Cli").Text=fake;Text(w,"Destination").Text=output;
         await (Task)Call(w,"AddCompletedRip")!;
         Check(Jobs(w).Count==1&&Jobs(w)[0].Status=="Waiting"&&!Directory.Exists(output)&&Control<Grid>(w,"CompressPage").Visibility==Visibility.Visible,"Adding a completed rip queues only that disc's files and leaves idle compression stopped");
         await (Task)Call(w,"AddCompletedRip")!;Check(Jobs(w).Count==1,"Adding the same completed rip twice does not duplicate jobs");
+        var locked=(RipSession)Field(w,"currentRipSession")!;
+        Check(locked.IsLocked&&locked.Subtitle.Contains("Queued · locked")&&!Control<Button>(w,"QueueRipButton").IsEnabled&&Control<Button>(w,"QueueRipButton").Content.ToString()=="Added to queue","Successfully queueing a run locks it and clearly labels the history and add button");
         var progress=(RipQueue)Field(w,"ripQueue")!;Check(progress.Files.Single().Status=="Saved","Ripping queue retains confirmed filenames and completion");
+        Call(w,"NewRipley",w,new RoutedEventArgs());Text(w,"DiscLabel").Text="ICARLY_S1_V2_D2";
         Environment.SetEnvironmentVariable("RIPLEY_TEST_MODE","partial");await (Task)Call(w,"RipDiscCore")!;Environment.SetEnvironmentVariable("RIPLEY_TEST_MODE",null);
         Check(((List<Job>)Field(w,"lastRipFiles")!).Count==0&&Jobs(w).Count==1&&Directory.GetFiles(Text(w,"RawFolder").Text,"title_t00.mkv",SearchOption.AllDirectories).Length==1,"An incomplete rip keeps raw data and offers no completed-rip queue action");
+    }
+    static async Task CheckLockedHistory(string temp,string fake,string preset)
+    {
+        var state=Path.Combine(temp,"locked-state");Directory.CreateDirectory(state);
+        foreach(var name in new[]{"settings.json","history.json","queue.json"})File.Copy(Path.Combine(temp,"state",name),Path.Combine(state,name));
+        var w=new MainWindow(state);var history=(ObservableCollection<RipSession>)Field(w,"ripHistory")!;
+        var locked=history.Single(s=>s.IsLocked);Control<ListBox>(w,"HistoryList").SelectedItem=locked;
+        Check(!Control<StackPanel>(w,"RipSetup").IsEnabled&&!Control<Button>(w,"InspectButton").IsEnabled&&!Control<Button>(w,"RipButton").IsEnabled&&!Control<Button>(w,"QueueRipButton").IsEnabled&&Control<TextBlock>(w,"PageSubtitle").Text.Contains("Run locked"),"Reopening a queued run preserves its lock and review-only UI");
+        var label=locked.DiscLabel;Text(w,"DiscLabel").Text="Changed unexpectedly";Call(w,"SaveHistory");
+        w=new MainWindow(state);history=(ObservableCollection<RipSession>)Field(w,"ripHistory")!;locked=history.Single(s=>s.IsLocked);
+        Check(locked.DiscLabel==label&&Text(w,"DiscLabel").Text==label,"Locked run metadata cannot be overwritten by later form changes");
+        await (Task)Call(w,"ClearQueueEntries")!;
+        w=new MainWindow(state);history=(ObservableCollection<RipSession>)Field(w,"ripHistory")!;var count=history.Count;
+        Text(w,"Destination").Text=Path.Combine(temp,"different-output");await (Task)Call(w,"AddCompletedRip")!;await (Task)Call(w,"RipDiscCore")!;
+        Call(w,"InspectDisc",w,new RoutedEventArgs());
+        Check(Jobs(w).Count==0&&history.Count==count&&((RipSession)Field(w,"currentRipSession")!).IsLocked&&!(bool)Field(w,"discBusy")!,"Clearing queues and restarting cannot unlock, requeue, rerip, or reinspect a locked run");
+        Call(w,"NewRipley",w,new RoutedEventArgs());
+        Check(history.Count==count+1&&!((RipSession)Field(w,"currentRipSession")!).IsLocked&&Control<StackPanel>(w,"RipSetup").IsEnabled,"New Ripley creates an editable run while retaining the locked history entry");
+
+        var legacy=Path.Combine(temp,"legacy-lock-state");Directory.CreateDirectory(legacy);
+        foreach(var name in new[]{"settings.json","history.json","queue.json"})File.Copy(Path.Combine(temp,"state",name),Path.Combine(legacy,name));
+        var doc=System.Text.Json.Nodes.JsonNode.Parse(File.ReadAllText(Path.Combine(legacy,"history.json")))!;
+        foreach(var session in doc["Sessions"]!.AsArray())session!["QueuedAtUtc"]=null;
+        File.WriteAllText(Path.Combine(legacy,"history.json"),doc.ToJsonString());
+        var upgraded=new MainWindow(legacy);
+        Check(((ObservableCollection<RipSession>)Field(upgraded,"ripHistory")!).Single(s=>s.Id==locked.Id).IsLocked&&!(bool)Field(upgraded,"encoding")!,"Existing completed runs already represented in the saved queue acquire a persistent lock on upgrade");
+
+        var batch=new MainWindow(Path.Combine(temp,"batch-lock-state"));Configure(batch,temp,fake,preset);
+        var raw=Path.Combine(temp,"lock-batch-raw");var files=MakeDisc(raw,"ICARLY_S4_D1","iCarly","82493","4",2);
+        var run=new RipSession{Status="Completed",DiscLabel="ICARLY_S4_D1",Files=files,RawFolder=raw,Season="4"};
+        ((ObservableCollection<RipSession>)Field(batch,"ripHistory")!).Add(run);Control<ListBox>(batch,"HistoryList").SelectedItem=run;
+        var options=(Options)Call(batch,"Snapshot")!;var planned=FolderNames.PlanFiles([files[0]],[raw],options,Text(batch,"OutputTemplate").Text);
+        Call(batch,"Enqueue",planned,planned[0].Encoding!,"Custom test");
+        Check(!run.IsLocked&&Jobs(batch).Count==1,"Queueing only part of a run keeps the remaining files available to add");
+        Folders(batch).Add(raw);await (Task)Call(batch,"QueueExisting")!;
+        Check(run.IsLocked&&Jobs(batch).Count==2&&Jobs(batch).All(j=>j.Status=="Waiting"),"Adding the remaining files through Existing rips locks the run without starting compression");
     }
     static List<Job> MakeDisc(string root,string label,string series,string id,string season,int count)
     {
@@ -243,7 +291,7 @@ class Program
         Control<ListBox>(w,"HistoryList").SelectedItem=history.First(h=>h!=current);
         Check(!Control<Button>(w,"NewRipleyButton").IsEnabled&&ReferenceEquals(Field(w,"currentRipSession"),current)&&ReferenceEquals(Control<ListBox>(w,"HistoryList").SelectedItem,current),"An active disc session cannot be replaced by new or historical settings");
         Call(w,"ShowCompressionQueue");Call(w,"OpenRipHistory",new Button{DataContext=current},new RoutedEventArgs());
-        Check(Control<ScrollViewer>(w,"RipPage").Visibility==Visibility.Visible&&(bool)Field(w,"discBusy")!,"The active rip remains reachable from history while compression navigation is available");
+        Check(Control<FrameworkElement>(w,"RipPage").Visibility==Visibility.Visible&&(bool)Field(w,"discBusy")!,"The active rip remains reachable from history while compression navigation is available");
         Check((bool)Field(w,"encoding")!&&Jobs(w).Count(j=>j.QueueName.Contains("STOP_S1_D3"))==2,"Ripping while compression runs does not extend the queue");
         Call(w,"StopAllOperations");await Task.WhenAll(running,ripping);Environment.SetEnvironmentVariable("RIPLEY_TEST_MODE",null);
         Check(!(bool)Field(w,"encoding")!&&!(bool)Field(w,"discBusy")!&&Jobs(w).Where(j=>j.QueueName.Contains("STOP_S1_D3")).All(j=>j.Status=="Paused"),"Stop all interrupts both operations and retains paused jobs");

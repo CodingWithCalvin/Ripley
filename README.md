@@ -7,7 +7,7 @@ A Windows desktop app for **MakeMKV → HandBrake → Scout**, with a forest-gre
 1. Open `artifacts\app\Ripley.exe` after building.
 2. Click **New Ripley** under the dog logo to create a disc session in history, then insert and inspect the disc. Drives refresh automatically when the app opens and when Windows reports disc insertion, removal, or drive connection changes. Search TheTVDB, select the series, and set the raw folder format and filename prefix. Ripley reads Scout's saved TVDB credentials without copying them into its own settings or logs.
 3. Click **Rip disc**. Raw files and metadata are saved independently of compression, with no HandBrake configuration required.
-4. When the disc finishes, optionally choose **Add to queue**. This adds only that disc's completed files using your compression settings. Ripping never automatically grows a compression queue.
+4. When the disc finishes, optionally choose **Add to queue**. This adds only that disc's completed files using your compression settings and locks the run. Choose **New Ripley** for the next disc. Ripping never automatically grows a compression queue.
 5. On **Compression Queue → Output & presets**, set the compressed output folder, folder format, filename prefix, installed HandBrake preset, and hardware decoding. Choose **Save settings**. Use **Add existing rips** to select finished folders, preview the names, and add files.
 6. Files are grouped into disc queues. Choose **Start selected queue** or **Start all queues**; Start all finishes each queue before moving to the next. You can rip more discs while compression runs.
 
@@ -86,6 +86,8 @@ The shell follows Scout, with a custom title bar, green sidebar, **New Ripley**,
 
 Each rip history entry includes a file queue with current-file and whole-disc progress, filenames, counts, and bytes written. The count follows MakeMKV's actual save operation. Filenames appear as files are created and update after final naming. **Written** means MakeMKV moved to another file; **Saved** means the full rip and raw-file publication succeeded. Cancelled or failed rips distinguish retained, unverified files from files never started.
 
+The rip workspace stacks **01 Insert a disc**, **02 Choose the series**, **03 Raw-rip folders**, and **04 Raw filename prefix** in a scrollable left column. The wider right column keeps the ripping queue and progress visible while you review setup, folder, and filename settings.
+
 **Compression Queue** has a list of disc queues and an **All queues** view. Ripley manifests group shared-folder files by their original disc session; external rips without manifests are grouped by source folder. The queue list, selected settings, file identities, and destinations persist. Existing older queues reopen under **Saved queue**. Restoring the app never starts processing automatically.
 
 Each file shows its full **Input** and **Output** path. Long paths wrap and can be selected and copied. Output paths reflect the queue's saved destination and update if a filename collision requires a numbered suffix.
@@ -95,6 +97,8 @@ Compression Queue has visible **Queues**, **Add existing rips**, and **Output & 
 **Clear queue** removes all queue entries without deleting raw or completed media. If encoding is active, confirmation explains that the current encode will be cancelled and its incomplete output discarded. A disc operation continues; files explicitly added during cleanup are retained and wait. **Cancel disc operation** stops just the disc, while **Stop all…** stops both workflows.
 
 Rip sessions are saved in `%LOCALAPPDATA%\Ripley\history.json`. **New Ripley** creates a new draft while retaining folder preferences and the selected series; it clears disc-specific values for the next disc. Selecting history restores that session's settings, file progress, and completed raw files. Completed entries can be added to compression later without reripping. During a disc operation, you can navigate between compression and the active history entry; creating or switching to another session waits until that operation finishes. Interrupted sessions reopen as interrupted and never restart automatically. The header no longer duplicates the sidebar navigation.
+
+Once all raw files from a completed run have been added to compression, its history entry shows **Queued · locked**. That run remains available for review, with its settings, rip actions, and **Added to queue** button locked. The lock persists after restarting Ripley or clearing the queue. Failed queue additions leave the run available to try again. Adding its files through **Add existing rips** also locks the run once every file is queued. Use **New Ripley** for another disc; use **Add existing rips** if you intentionally want to compress those raw files again.
 
 ## Upgrading from Reel
 

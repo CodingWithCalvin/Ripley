@@ -24,11 +24,13 @@ public partial class MainWindow
     }
     async void QueueCompletedRip(object sender,RoutedEventArgs e)
     {
-        if(adding||discBusy||lastRipFiles.Count==0) return;
+        if(adding||discBusy||RipLocked||lastRipFiles.Count==0) return;
         try {await AddCompletedRip();} catch(Exception ex) {Error(ex);RipStatus.Text="Raw files saved, but could not add to queue: "+ex.Message;}
     }
     async Task AddCompletedRip()
     {
+        if(RipLocked){Status.Text=LockedRipMessage;return;}
+        if(adding||discBusy||lastRipFiles.Count==0)return;
         SetAdding(true);
         try {
             var selected=lastRipFiles.ToArray();var options=Snapshot();var preset=((HandBrakePreset)PresetChoice.SelectedItem).Name;
