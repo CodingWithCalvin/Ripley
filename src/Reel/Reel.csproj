@@ -1,0 +1,2 @@
+<Project Sdk="Microsoft.NET.Sdk"><PropertyGroup><OutputType>WinExe</OutputType><TargetFramework>net9.0-windows</TargetFramework><UseWPF>true</UseWPF><ImplicitUsings>enable</ImplicitUsings><Nullable>enable</Nullable><ApplicationIcon>Assets\Reel.ico</ApplicationIcon></PropertyGroup>
+<ItemGroup><Resource Include="Assets\Reel.png"/><Resource Include="Assets\Reel.ico"/></ItemGroup></Project>

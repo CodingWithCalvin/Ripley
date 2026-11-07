@@ -1,0 +1,12 @@
+**/bin/
+**/obj/
+/app/
+/.vs/
+/.idea/
+/TestResults/
+*.user
+*.suo
+*.log
+*.dpapi
+.env
+.env.*
